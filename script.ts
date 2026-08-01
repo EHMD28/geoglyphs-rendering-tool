@@ -17,6 +17,9 @@ enum Stroke {
     DiagonalDownRightHalf = 1 << 11,
 }
 
+// TODO: Remove hard-coded constant
+const MAX_BITFLAG_SHIFT = 11;
+
 enum Vowel {
     Aglyph = "a",
     Iglyph = "ee",
@@ -52,7 +55,7 @@ const CONSTANANT_TO_STROKES_DICT = {
     "ch": Stroke.Horizontal | Stroke.DiagonalUp | Stroke.DiagonalDown,
 };
 
-function get_reversed_dict(dict: Record<string, number>): Record<number, string> {
+function getReversedDict(dict: Record<string, number>): Record<number, string> {
     const ret: Record<number, string> = {};
     for (const [k, v] of Object.entries(dict)) {
         ret[v] = k;
@@ -60,9 +63,9 @@ function get_reversed_dict(dict: Record<string, number>): Record<number, string>
     return ret;
 }
 
-const STROKES_TO_CONSTANANT_DICT = get_reversed_dict(CONSTANANT_TO_STROKES_DICT);
+const STROKES_TO_CONSTANANT_DICT = getReversedDict(CONSTANANT_TO_STROKES_DICT);
 
-function generate_all_glyphs(): Glyph[] {
+function generateAllGlyphs(): Glyph[] {
     const allVowels = [Vowel.Aglyph, Vowel.Iglyph, Vowel.Uglyph, Vowel.Short];
     const ret: Glyph[] = [];
     for (const vowel of allVowels) {
@@ -76,12 +79,70 @@ function generate_all_glyphs(): Glyph[] {
     return ret
 }
 
-function print_glyph(glyph: Glyph) {
+function printGlyph(glyph: Glyph) {
     console.log(`${STROKES_TO_CONSTANANT_DICT[glyph.strokePattern]}${glyph.vowel}`)
 }
 
-const ALL_GLYPHS: Glyph[] = generate_all_glyphs()
+const ALL_GLYPHS: Glyph[] = generateAllGlyphs()
 
-for (const g of ALL_GLYPHS) {
-    print_glyph(g)
+interface LineSegment {
+    x1: number;
+    y1: number;
+    x2: number,
+    y2: number;
 }
+
+const STROKE_TO_LINE_SEGMENT_TABLE: Record<Stroke, LineSegment> = {
+    [Stroke.None]: { x1: 0, y1: 0, x2: 0, y2: 0 },
+    [Stroke.Vertical]: { x1: 0.5, y1: 0, x2: 0.5, y2: 1.0 },
+    [Stroke.VerticalOffsetLeft]: { x1: 0.3, y1: 0, x2: 0.3, y2: 1.0 },
+    [Stroke.VerticalOffsetRight]: { x1: 0.7, y1: 0, x2: 0.7, y2: 1.0 },
+    [Stroke.Horizontal]: { x1: 0, y1: 0.5, x2: 1.0, y2: 0.5 },
+    [Stroke.HorizontalOffsetUp]: { x1: 0, y1: 0.3, x2: 1.0, y2: 0.7 },
+    [Stroke.HorizontalOffsetDown]: { x1: 0, y1: 0.7, x2: 1.0, y2: 0.7 },
+    [Stroke.DiagonalDown]: { x1: 0, y1: 0, x2: 1.0, y2: 1.0 },
+    [Stroke.DiagonalUp]: { x1: 0, y1: 1.0, x2: 1.0, y2: 0 },
+    [Stroke.DiagonalDownOffsetLeft]: { x1: 0, y1: 0, x2: 0.5, y2: 1.0 },
+    [Stroke.DiagonalUpOffsetRight]: { x1: 0.5, y1: 1.0, x2: 1.0, y2: 0 },
+    [Stroke.DiagonalUpRightHalf]: { x1: 0.5, y1: 0.5, x2: 1.0, y2: 0 },
+    [Stroke.DiagonalDownRightHalf]: { x1: 0.5, y1: 0.5, x2: 1.0, y2: 1.0 }
+}
+
+function drawGlyph(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: number, width: number) {
+    ctx.beginPath();
+    ctx.rect(x, y, width, width);
+    for (let i = 0; i < MAX_BITFLAG_SHIFT; i++) {
+        const flag = 1 << i;
+        if ((glyph.strokePattern & flag) == flag) {
+            // console.log("Drawing line segment.")
+            const line = STROKE_TO_LINE_SEGMENT_TABLE[flag as Stroke];
+            ctx.moveTo((line.x1 * width) + x, (line.y1 * width) + y);
+            ctx.lineTo((line.x2 * width) + x, (line.y2 * width) + y);
+        }
+    }
+    ctx.stroke();
+}
+
+function draw(ctx: CanvasRenderingContext2D) {
+    const glyph: Glyph = {
+        strokePattern: Stroke.Horizontal | Stroke.Vertical | Stroke.DiagonalUp | Stroke.DiagonalDown,
+        vowel: Vowel.Aglyph
+    };
+    const x = 10;
+    const y = 10;
+    const width = 50;
+    drawGlyph(ctx, glyph, x, y, width);
+}
+
+function start() {
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement
+    if (canvas !== null) {
+        const ctx = canvas.getContext("2d");
+        if (ctx !== null) {
+            const fps = 30;
+            setInterval(() => draw(ctx), 1000 / fps);
+        }
+    }
+}
+
+start();

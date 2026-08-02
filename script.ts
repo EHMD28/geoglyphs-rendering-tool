@@ -17,15 +17,28 @@ enum Stroke {
     DiagonalUpOffsetRight = 1 << 9,
     DiagonalUpRightHalf = 1 << 10,
     DiagonalDownRightHalf = 1 << 11,
+    DiagonalUpLeftHalf = 1 << 12,
+    DiagonalDownLeftHalf = 1 << 13,
+    ShorteningDash = 1 << 14,
+    LengtheningDash = 1 << 15,
 }
 
-// TODO: Remove hard-coded constant
-const MAX_BITFLAG_SHIFT = 11;
+function getMaxBitflagShift(): number {
+    // TODO: Remove hard-coded constant
+    return 15;
+}
+
+const MAX_BITFLAG_SHIFT = getMaxBitflagShift();
 
 enum Vowel {
     Aglyph = "a",
+    ShortAglyph = "ah",
+    LongAglyph = "ai",
     Iglyph = "ee",
+    ShortIglyph = "eh",
     Uglyph = "oo",
+    ShortUglyph = "oh",
+    LongUglyph = "oa",
     Short = "",
 }
 
@@ -53,6 +66,7 @@ const ROOT_TO_STROKES_MAP: Record<string, number> = {
     "w": Stroke.Vertical | Stroke.DiagonalUp | Stroke.DiagonalDown,
     "v": Stroke.Vertical | Stroke.DiagonalDownOffsetLeft | Stroke.DiagonalUpOffsetRight,
     "f": Stroke.Vertical | Stroke.DiagonalUpRightHalf | Stroke.DiagonalDownRightHalf,
+    "g": Stroke.Vertical | Stroke.DiagonalUpLeftHalf | Stroke.DiagonalDownLeftHalf,
     "sh": Stroke.Vertical | Stroke.Horizontal | Stroke.DiagonalDown,
     "th": Stroke.Vertical | Stroke.Horizontal | Stroke.DiagonalUp,
     "ch": Stroke.Horizontal | Stroke.DiagonalUp | Stroke.DiagonalDown,
@@ -93,10 +107,15 @@ const ALL_GLYPHS: Glyph[] = generateAllGlyphs()
 const ENDING_TO_VOWEL_MAP: Record<string, Vowel> = {
     "a": Vowel.Aglyph,
     "aa": Vowel.Aglyph,
+    "ai": Vowel.LongAglyph,
+    "ah": Vowel.ShortAglyph,
     "i": Vowel.Iglyph,
     "ee": Vowel.Iglyph,
+    "eh": Vowel.ShortIglyph,
     "u": Vowel.Uglyph,
     "oo": Vowel.Uglyph,
+    "oh": Vowel.ShortUglyph,
+    "oa": Vowel.LongUglyph
 };
 
 function countOccurances(str: string, substr: string): number {
@@ -105,6 +124,7 @@ function countOccurances(str: string, substr: string): number {
 }
 
 function parseGlyphFromStr(s: string): Glyph | null {
+    if (s.trim() == "") return null;
     const validEndings = Object.keys(ENDING_TO_VOWEL_MAP);
     let vowel = Vowel.Short;
     for (const ending of validEndings) {
@@ -125,7 +145,19 @@ function parseGlyphFromStr(s: string): Glyph | null {
     const validRoots = Object.keys(ROOT_TO_STROKES_MAP);
     const validVowels = Object.values(ENDING_TO_VOWEL_MAP);
     if (validRoots.includes(root) && (validVowels.includes(vowel) || vowel === Vowel.Short)) {
-        const strokePattern = ROOT_TO_STROKES_MAP[root] ?? 0;
+        let strokePattern = ROOT_TO_STROKES_MAP[root] ?? 0;
+        switch (vowel) {
+            case Vowel.ShortAglyph:
+            case Vowel.ShortIglyph:
+            case Vowel.ShortUglyph:
+                strokePattern |= Stroke.ShorteningDash;
+                break;
+            case Vowel.LongAglyph:
+            case Vowel.LongUglyph:
+                strokePattern |= Stroke.LengtheningDash;
+                break;
+            default: break;
+        }
         return {
             strokePattern,
             vowel
@@ -135,12 +167,12 @@ function parseGlyphFromStr(s: string): Glyph | null {
     }
 }
 
-function parseGlyphsFromSentence(s: string): Glyph[][] {
-    const ret: Glyph[][] = [];
+function parseGlyphsFromSentence(s: string): (Glyph | null)[][] {
+    const ret: (Glyph | null)[][] = [];
     const words = s.split(" ");
     for (const word of words) {
         const glyphStrings = word.split("-");
-        const glyphs = glyphStrings.map(g => parseGlyphFromStr(g)).filter(g => g !== null);
+        const glyphs = glyphStrings.map(g => parseGlyphFromStr(g));
         ret.push(glyphs);
     }
     return ret;
@@ -169,15 +201,22 @@ const STROKE_TO_LINE_SEGMENT_TABLE: Record<Stroke, LineSegment> = {
     [Stroke.DiagonalDownOffsetLeft]: { x1: 0, y1: 0, x2: 0.5, y2: 1.0 },
     [Stroke.DiagonalUpOffsetRight]: { x1: 0.5, y1: 1.0, x2: 1.0, y2: 0 },
     [Stroke.DiagonalUpRightHalf]: { x1: 0.5, y1: 0.5, x2: 1.0, y2: 0 },
-    [Stroke.DiagonalDownRightHalf]: { x1: 0.5, y1: 0.5, x2: 1.0, y2: 1.0 }
+    [Stroke.DiagonalDownRightHalf]: { x1: 0.5, y1: 0.5, x2: 1.0, y2: 1.0 },
+    [Stroke.DiagonalUpLeftHalf]: { x1: 0, y1: 0, x2: 0.5, y2: 0.5 },
+    [Stroke.DiagonalDownLeftHalf]: { x1: 0, y1: 1.0, x2: 0.5, y2: 0.5 },
+    [Stroke.ShorteningDash]: { x1: 0, y1: 1.2, x2: 1.0, y2: 1.2 },
+    [Stroke.LengtheningDash]: { x1: 0, y1: -0.2, x2: 1.0, y2: -0.2 },
 }
 
 function getVowelPath(glyph: Glyph, x: number, y: number, width: number): Path2D {
     const path = new Path2D();
     switch (glyph.vowel) {
+        case Vowel.ShortAglyph:
+        case Vowel.LongAglyph:
         case Vowel.Aglyph: // Square
             path.rect(x, y, width, width);
             break;
+        case Vowel.ShortIglyph:
         case Vowel.Iglyph: // Triangle
             const height = width * (Math.sqrt(3) / 2); // Comes from the Pythagorean theorem
             path.moveTo(x, y + width);
@@ -187,6 +226,7 @@ function getVowelPath(glyph: Glyph, x: number, y: number, width: number): Path2D
             path.lineTo(x + width, y + width);
             path.lineTo(x, y + width);
             break;
+        case Vowel.ShortUglyph:
         case Vowel.Uglyph: // Circle
             path.arc(x + (width / 2), y + (width / 2), width / 2, 0, 2 * Math.PI);
             break;
@@ -201,7 +241,7 @@ function getVowelPath(glyph: Glyph, x: number, y: number, width: number): Path2D
     return path;
 }
 
-function drawStrokes(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: number, width: number) {
+function drawInnerStrokes(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: number, width: number) {
     ctx.beginPath();
     for (let i = 0; i <= MAX_BITFLAG_SHIFT; i++) {
         const flag = 1 << i;
@@ -214,14 +254,42 @@ function drawStrokes(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: 
     ctx.stroke();
 }
 
-function drawGlyph(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: number, width: number) {
-    console.debug(glyph);
-    const vowelPath = getVowelPath(glyph, x, y, width);
-    ctx.stroke(vowelPath);
-    ctx.save();
-    ctx.clip(vowelPath);
-    drawStrokes(ctx, glyph, x, y, width);
-    ctx.restore();
+function drawOuterStrokes(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: number, width: number) {
+    let line = null;
+    if (glyph.strokePattern & Stroke.ShorteningDash) {
+        line = STROKE_TO_LINE_SEGMENT_TABLE[Stroke.ShorteningDash];
+    } else if (glyph.strokePattern & Stroke.LengtheningDash) {
+        line = STROKE_TO_LINE_SEGMENT_TABLE[Stroke.LengtheningDash];
+    }
+    if (line != null) {
+        ctx.beginPath();
+        ctx.moveTo((line.x1 * width) + x, (line.y1 * width) + y);
+        ctx.lineTo((line.x2 * width) + x, (line.y2 * width) + y);
+        ctx.stroke();
+    }
+}
+
+function drawGlyph(ctx: CanvasRenderingContext2D, glyph: Glyph | null, x: number, y: number, width: number) {
+    if (glyph !== null) {
+        console.debug(`Draw ${JSON.stringify(glyph)} at (${x}, ${y}) of width ${width}`);
+        const vowelPath = getVowelPath(glyph, x, y, width);
+        ctx.stroke(vowelPath);
+        ctx.save();
+        ctx.clip(vowelPath);
+        drawInnerStrokes(ctx, glyph, x, y, width);
+        ctx.restore();
+        drawOuterStrokes(ctx, glyph, x, y, width);
+    } else {
+        console.debug("Invalid glyph");
+        ctx.save();
+        ctx.strokeStyle = "red";
+        const missingGlyph: Glyph = {
+            strokePattern: Stroke.DiagonalUp | Stroke.DiagonalDown,
+            vowel: Vowel.Short
+        };
+        drawInnerStrokes(ctx, missingGlyph, x, y, width);
+        ctx.restore();
+    }
 }
 
 interface GlyphSpacing {
@@ -237,7 +305,7 @@ interface GlyphSpacing {
     margin: number;
 }
 
-function drawGlyphsSentence(ctx: CanvasRenderingContext2D, glyphSentence: Glyph[][], config: AppConfig) {
+function drawGlyphsSentence(ctx: CanvasRenderingContext2D, glyphSentence: (Glyph | null)[][], config: AppConfig) {
     const spacing = config.glyphSpacing;
     let canvas = ctx.canvas;
     // Coordinates of the top-left corner of the currently drawn glyph.
@@ -319,6 +387,8 @@ function addHandlers(ctx: CanvasRenderingContext2D) {
         link.setAttribute("href", image);
         link.click();
     });
+    const clearBtn = document.getElementById("clear-btn") as HTMLButtonElement;
+    clearBtn.addEventListener("click", _ => ctx.reset());
 }
 
 function start() {

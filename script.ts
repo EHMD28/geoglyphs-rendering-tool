@@ -124,7 +124,7 @@ function parseGlyphFromStr(s: string): Glyph | null {
     }
     const validRoots = Object.keys(ROOT_TO_STROKES_MAP);
     const validVowels = Object.values(ENDING_TO_VOWEL_MAP);
-    if (validRoots.includes(root) && (validVowels.includes(vowel) || vowel === "")) {
+    if (validRoots.includes(root) && (validVowels.includes(vowel) || vowel === Vowel.Short)) {
         const strokePattern = ROOT_TO_STROKES_MAP[root] ?? 0;
         return {
             strokePattern,
@@ -135,7 +135,18 @@ function parseGlyphFromStr(s: string): Glyph | null {
     }
 }
 
-/* ---------- Drawing ---------- */
+function parseGlyphsFromSentence(s: string): Glyph[][] {
+    const ret: Glyph[][] = [];
+    const words = s.split(" ");
+    for (const word of words) {
+        const glyphStrings = word.split("-");
+        const glyphs = glyphStrings.map(g => parseGlyphFromStr(g)).filter(g => g !== null);
+        ret.push(glyphs);
+    }
+    return ret;
+}
+
+/* ---------- Glyph Rendering ---------- */
 
 interface LineSegment {
     x1: number;
@@ -213,29 +224,55 @@ function drawGlyph(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: nu
     ctx.restore();
 }
 
-function parseAndRenderGlyphFromUi(ctx: CanvasRenderingContext2D) {
+const GLYPH_SPACING = {
+    /** The width of each glyph. */
+    charWidth: 50,
+    /** The width of the gap between characters in a word. */
+    characterGap: 5,
+    /** The width of a whitespace character. */
+    spaceWidth: 70,
+    /** The gap between rows of characters. */
+    rowGap: 30,
+    /** The margin around the characters being rendered. */
+    margin: 20,
+};
+
+function drawGlyphsSentence(ctx: CanvasRenderingContext2D, glyphSentence: Glyph[][]) {
+    let canvas = ctx.canvas;
+    // Coordinates of the top-left corner of the currently drawn glyph.
+    let x = canvas.width - (GLYPH_SPACING.charWidth + GLYPH_SPACING.margin);
+    let y = GLYPH_SPACING.margin;
+    // Draw each glyph on a single line.
+    for (const word of glyphSentence) {
+        for (let i = 0; i < word.length; i++) {
+            const glyph = word[i];
+            if (typeof glyph !== "undefined")
+                drawGlyph(ctx, glyph, x, y, GLYPH_SPACING.charWidth);
+            if (i != (word.length - 1)) // Only prepare to draw the next character when it isn't the last.
+                x -= (GLYPH_SPACING.charWidth + GLYPH_SPACING.characterGap);
+        }
+        x -= GLYPH_SPACING.spaceWidth;
+    }
+}
+
+/* ---------- Input Handling ---------- */
+
+function parseAndRenderGlyphsFromUi(ctx: CanvasRenderingContext2D) {
     let canvas = ctx.canvas;
     console.log(`Canvas: ${canvas.width} x ${canvas.height}`);
     const inputElement = document.getElementById("glyph-input") as HTMLInputElement;
-    const glyph = parseGlyphFromStr(inputElement.value.toLowerCase());
-    if (glyph !== null) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const x = 10;
-        const y = 10;
-        const width = 50;
-        drawGlyph(ctx, glyph, x, y, width);
-    } else {
-        alert("Invalid input");
-    }
+    const glyphs = parseGlyphsFromSentence(inputElement.value.toLowerCase());
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGlyphsSentence(ctx, glyphs);
 }
 
 function addHandlers(ctx: CanvasRenderingContext2D) {
     const parseBtn = document.getElementById("parse-input-btn") as HTMLButtonElement;
-    parseBtn.onclick = () => parseAndRenderGlyphFromUi(ctx);
+    parseBtn.onclick = () => parseAndRenderGlyphsFromUi(ctx);
     const glyphInputElement = document.getElementById("glyph-input") as HTMLInputElement;
     glyphInputElement.addEventListener("keydown", ev => {
         if (ev.key === "Enter") {
-            parseAndRenderGlyphFromUi(ctx);
+            parseAndRenderGlyphsFromUi(ctx);
         }
     })
 }

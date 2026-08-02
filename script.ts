@@ -311,6 +311,14 @@ function addHandlers(ctx: CanvasRenderingContext2D) {
             parseAndRenderGlyphsFromUi(ctx);
         }
     })
+    const saveImageBtn = document.getElementById("save-image-btn") as HTMLInputElement;
+    saveImageBtn?.addEventListener("click", _ => {
+        const link = document.createElement("a");
+        link.setAttribute("download", "geoglyphs-image.png");
+        const image = ctx.canvas.toDataURL("image/png")
+        link.setAttribute("href", image);
+        link.click();
+    });
 }
 
 function start() {

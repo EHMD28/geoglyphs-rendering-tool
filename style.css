@@ -2,15 +2,40 @@ h1 {
     text-align: center;
 }
 
+#glyph-input-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
 #glyph-input {
     width: 500px;
+}
+
+#config-inputs-container {
+    display: grid;
+    grid-template-columns: auto auto;
+    row-gap: 10px;
+}
+
+.num-input {
+    width: 300px;
+    display: inline-block;
+}
+
+.num-input label {
+    width: 50%;
+}
+
+.num-input input {
+    width: 50%;
 }
 
 #ui-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 20px;
 }
 
 canvas {

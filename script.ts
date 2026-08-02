@@ -51,7 +51,7 @@ const ROOT_TO_STROKES_MAP: Record<string, number> = {
     "h": Stroke.VerticalOffsetLeft | Stroke.VerticalOffsetRight | Stroke.Horizontal,
     "b": Stroke.HorizontalOffsetUp | Stroke.HorizontalOffsetDown | Stroke.Vertical,
     "w": Stroke.Vertical | Stroke.DiagonalUp | Stroke.DiagonalDown,
-    "v": Stroke.DiagonalDownOffsetLeft | Stroke.DiagonalUpOffsetRight,
+    "v": Stroke.Vertical | Stroke.DiagonalDownOffsetLeft | Stroke.DiagonalUpOffsetRight,
     "f": Stroke.Vertical | Stroke.DiagonalUpRightHalf | Stroke.DiagonalDownRightHalf,
     "sh": Stroke.Vertical | Stroke.Horizontal | Stroke.DiagonalDown,
     "th": Stroke.Vertical | Stroke.Horizontal | Stroke.DiagonalUp,
@@ -224,46 +224,82 @@ function drawGlyph(ctx: CanvasRenderingContext2D, glyph: Glyph, x: number, y: nu
     ctx.restore();
 }
 
-const GLYPH_SPACING = {
+interface GlyphSpacing {
     /** The width of each glyph. */
-    charWidth: 50,
+    charWidth: number;
     /** The width of the gap between characters in a word. */
-    characterGap: 5,
+    characterGap: number;
     /** The width of a whitespace character. */
-    spaceWidth: 70,
+    spaceWidth: number;
     /** The gap between rows of characters. */
-    rowGap: 30,
+    rowGap: number;
     /** The margin around the characters being rendered. */
-    margin: 20,
-};
+    margin: number;
+}
 
-function drawGlyphsSentence(ctx: CanvasRenderingContext2D, glyphSentence: Glyph[][]) {
+function drawGlyphsSentence(ctx: CanvasRenderingContext2D, glyphSentence: Glyph[][], config: AppConfig) {
+    const spacing = config.glyphSpacing;
     let canvas = ctx.canvas;
     // Coordinates of the top-left corner of the currently drawn glyph.
-    let x = canvas.width - (GLYPH_SPACING.charWidth + GLYPH_SPACING.margin);
-    let y = GLYPH_SPACING.margin;
+    const initialOffset = canvas.width - (spacing.charWidth + spacing.margin);
+    let x = initialOffset;
+    let y = spacing.margin;
     // Draw each glyph on a single line.
     for (const word of glyphSentence) {
-        for (let i = 0; i < word.length; i++) {
-            const glyph = word[i];
-            if (typeof glyph !== "undefined")
-                drawGlyph(ctx, glyph, x, y, GLYPH_SPACING.charWidth);
-            if (i != (word.length - 1)) // Only prepare to draw the next character when it isn't the last.
-                x -= (GLYPH_SPACING.charWidth + GLYPH_SPACING.characterGap);
+        if (x > spacing.margin) {
+            for (let i = 0; i < word.length; i++) {
+                const glyph = word[i];
+                if (typeof glyph !== "undefined")
+                    drawGlyph(ctx, glyph, x, y, spacing.charWidth);
+                if (i != (word.length - 1)) // Only prepare to draw the next character when it isn't the last.
+                    x -= (spacing.charWidth + spacing.characterGap);
+            }
+            x -= spacing.spaceWidth;
+        } else {
+            x = initialOffset;
+            y += spacing.charWidth + spacing.rowGap;
         }
-        x -= GLYPH_SPACING.spaceWidth;
     }
 }
 
 /* ---------- Input Handling ---------- */
 
+interface AppConfig {
+    canvasWidth: number;
+    canvasHeight: number;
+    glyphSpacing: GlyphSpacing;
+}
+
+function getConfigFromUi(): AppConfig {
+    const canvasWidthInput = document.getElementById("canvas-width-input") as HTMLInputElement;
+    const canvasHeightInput = document.getElementById("canvas-height-input") as HTMLInputElement;
+    const charWidthInput = document.getElementById("glyph-spacing-char-width-input") as HTMLInputElement;
+    const charGapInput = document.getElementById("glyph-spacing-char-gap-input") as HTMLInputElement;
+    const spaceWidthInput = document.getElementById("glyph-spacing-space-width-input") as HTMLInputElement;
+    const rowGapInput = document.getElementById("glyph-spacing-row-gap-input") as HTMLInputElement;
+    const marginInput = document.getElementById("glyph-spacing-margin-input") as HTMLInputElement;
+
+    return {
+        canvasWidth: Number(canvasWidthInput.value) ?? 0,
+        canvasHeight: Number(canvasHeightInput.validationMessage) ?? 0,
+        glyphSpacing: {
+            charWidth: Number(charWidthInput.value) ?? 0,
+            characterGap: Number(charGapInput.value) ?? 0,
+            spaceWidth: Number(spaceWidthInput.value) ?? 0,
+            rowGap: Number(rowGapInput.value) ?? 0,
+            margin: Number(marginInput.value) ?? 0,
+        }
+    };
+}
+
 function parseAndRenderGlyphsFromUi(ctx: CanvasRenderingContext2D) {
-    let canvas = ctx.canvas;
+    const canvas = ctx.canvas;
     console.log(`Canvas: ${canvas.width} x ${canvas.height}`);
     const inputElement = document.getElementById("glyph-input") as HTMLInputElement;
     const glyphs = parseGlyphsFromSentence(inputElement.value.toLowerCase());
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGlyphsSentence(ctx, glyphs);
+    const config = getConfigFromUi();
+    drawGlyphsSentence(ctx, glyphs, config);
 }
 
 function addHandlers(ctx: CanvasRenderingContext2D) {

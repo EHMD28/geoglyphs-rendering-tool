@@ -12,10 +12,46 @@
 <body>
     <h1>Geoglyphs Rendering Tool</h1>
     <div id="ui-container">
-        <label for="glyph-input">Glyph Input</label>
-        <input type="text" name="glyph-input" id="glyph-input">
-        <button id="parse-input-btn">Parse Input</button>
-        <br> <br>
+        <div id="glyph-input-container">
+            <label for="glyph-input">Glyph Input</label>
+            <input type="text" name="glyph-input" id="glyph-input">
+            <button id="parse-input-btn">Parse Input</button>
+        </div>
+        <div id="config-inputs-container">
+            <div class="num-input">
+                <label for="canvas-width-input">Canvas Width</label>
+                <input type="number" min="0" value="1000" name="canvas-width-input" id="canvas-width-input">
+            </div>
+            <div class="num-input">
+                <label for="canvas-height-input">Canvas Height</label>
+                <input type="number" min="0" value="500" name="canvas-height-input" id="canvas-height-input">
+            </div>
+            <div class="num-input">
+                <label for="glyph-spacing-char-width-input">Character Width</label>
+                <input type="number" min="0" value="50" name="glyph-spacing-char-width-input"
+                    id="glyph-spacing-char-width-input">
+            </div>
+            <div class="num-input">
+                <label for="glyph-spacing-char-gap-input">Character Gap</label>
+                <input type="number" min="0" value="5" name="glyph-spacing-char-gap-input"
+                    id="glyph-spacing-char-gap-input">
+            </div>
+            <div class="num-input">
+                <label for="glyph-spacing-space-width-input">Space Width</label>
+                <input type="number" min="0" value="70" name="glyph-spacing-space-width-input"
+                    id="glyph-spacing-space-width-input">
+            </div>
+            <div class="num-input">
+                <label for="glyph-spacing-row-gap-input">Row Gap</label>
+                <input type="number" min="0" value="30" name="glyph-spacing-row-gap-input"
+                    id="glyph-spacing-row-gap-input">
+            </div>
+            <div class="num-input">
+                <label for="glyph-spacing-margin-input">Margin</label>
+                <input type="number" min="0" value="20" name="glyph-spacing-margin-input"
+                    id="glyph-spacing-margin-input">
+            </div>
+        </div>
         <canvas id="canvas" width="1000" height="500"></canvas>
     </div>
 </body>

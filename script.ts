@@ -125,7 +125,8 @@ function countOccurances(str: string, substr: string): number {
 
 function parseGlyphFromStr(s: string): Glyph | null {
     if (s.trim() == "") return null;
-    const validEndings = Object.keys(ENDING_TO_VOWEL_MAP);
+    // Endings are sorted by length so that longer endings are checked before shorter endings.
+    const validEndings = Object.keys(ENDING_TO_VOWEL_MAP).sort((a, b) => b.length - a.length);
     let vowel = Vowel.Short;
     for (const ending of validEndings) {
         if (s.endsWith(ending)) {
@@ -227,6 +228,7 @@ function getVowelPath(glyph: Glyph, x: number, y: number, width: number): Path2D
             path.lineTo(x, y + width);
             break;
         case Vowel.ShortUglyph:
+        case Vowel.LongUglyph:
         case Vowel.Uglyph: // Circle
             path.arc(x + (width / 2), y + (width / 2), width / 2, 0, 2 * Math.PI);
             break;

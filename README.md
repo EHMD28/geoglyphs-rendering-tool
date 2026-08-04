@@ -93,5 +93,7 @@ To run, ensure that you either have `npm` or `pnpm` installed. Then, run the fol
 
 ```bash
 npm i --save-dev
-npm run dev
+tsc --build
 ```
+
+Now, just open `index.html` in your browser.

@@ -12,14 +12,14 @@ A character in Geoglyphs, henceforth referred to as a glyph, is comprised of two
 
 | Vowel        | Shape               | Sound | Example | Romanization |
 | ------------ | ------------------- | ----- | ------- | ------------ |
-| Aglyph       | square              | aa    | m*a*ch  | a            |
-| Short Aglyph | underlined square   | ah    | c*a*t   | ah           |
-| Long Aglyph  | overlined square    | ai    | k*i*te  | ai           |
-| Iglyph       | triangle            | ee    | k*ee*p  | i or ee      |
-| Short Iglyph | underlined triangle | eh    | m*e*t   | eh           |
-| Uglyph       | circle              | oo    | h*oo*t  | u or oo      |
-| Short Uglyph | underlined circle   | oh    | d*o*t   | oh           |
-| Long Uglyph  | overlined circle    | oa    | c*oa*t  | oa           |
+| Aglyph       | square              | aa    | m**a**ch  | a            |
+| Short Aglyph | underlined square   | ah    | c**a**t   | ah           |
+| Long Aglyph  | overlined square    | ai    | k**i**te  | ai           |
+| Iglyph       | triangle            | ee    | k**ee**p  | i or ee      |
+| Short Iglyph | underlined triangle | eh    | m**e**t   | eh           |
+| Uglyph       | circle              | oo    | h**oo**t  | u or oo      |
+| Short Uglyph | underlined circle   | oh    | d**o**t   | oh           |
+| Long Uglyph  | overlined circle    | oa    | c**oa**t  | oa           |
 | Short*       | 45° Rotated Square  | n/a   | n/a     | n/a          |
 
 \* - Short isn't technically a vowel, but it represents the absence of a vowel. 
